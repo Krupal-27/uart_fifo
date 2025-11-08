@@ -68,4 +68,4 @@ This project implements a complete UART (Universal Asynchronous Receiver/Transmi
 - **empty**: FIFO empty status
 - **full**: FIFO full status
 
-## 📁 Project Structure
+
