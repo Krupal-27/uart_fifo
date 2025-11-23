@@ -1,19 +1,19 @@
 `timescale 1ns / 1ps
 
-module fifo #(parameter WIDTH=8, DEPTH=16)(
+module fifo #(parameter WIDTH=8, DEPTH=16)(  // WIDTH = 8 bits data , DEPTH =  hold 16 iteam 
     input clk,
     input reset,
-    input wr_en,
-    input rd_en,
-    input [WIDTH-1:0] din,
+    input wr_en, // write enable put data in 
+    input rd_en,  // read enable take data out
+    input [WIDTH-1:0] din, 
     output reg [WIDTH-1:0] dout,
     output empty,
-    output full
+    output full // fifo is full
 );
-    reg [WIDTH-1:0] mem [0:DEPTH-1];
-    reg [3:0] wr_ptr;
-    reg [3:0] rd_ptr;
-    reg [4:0] count;
+    reg [WIDTH-1:0] mem [0:DEPTH-1]; // 16×8 bit memory
+    reg [3:0] wr_ptr; // write pointer where the next data will be written
+    reg [3:0] rd_ptr; // read pointer where the next data will be read
+    reg [4:0] count; // item counte how many item in fifo  
 
     always @(posedge clk or posedge reset) begin
         if(reset) begin
@@ -23,9 +23,9 @@ module fifo #(parameter WIDTH=8, DEPTH=16)(
             dout <= 0;
         end else begin
             if(wr_en && !full) begin
-                mem[wr_ptr] <= din;
-                wr_ptr <= wr_ptr + 1;
-                count <= count + 1;
+                mem[wr_ptr] <= din; // data save  in memory  
+                wr_ptr <= wr_ptr + 1; // point to next write location
+                count <= count + 1; // increase item count
             end
             
             if(rd_en && !empty) begin
@@ -43,7 +43,7 @@ endmodule
 module uart #(parameter CLK_FREQ=50000000, BAUD=115200)(
     input clk,
     input reset,
-    input rx,
+    input rx, 
     output reg tx,
     input [7:0] tx_data,
     input tx_start,
@@ -52,7 +52,7 @@ module uart #(parameter CLK_FREQ=50000000, BAUD=115200)(
     output reg rx_ready
 );
     localparam CLOCKS_PER_BIT = CLK_FREQ / BAUD;
-    
+      // uart  internel helper 
     reg [15:0] tx_counter;
     reg [3:0] tx_bit_count;
     reg [9:0] tx_shift;
@@ -64,26 +64,26 @@ module uart #(parameter CLK_FREQ=50000000, BAUD=115200)(
 
     always @(posedge clk or posedge reset) begin
         if(reset) begin
-            tx <= 1;
+            tx <= 1;  // no data being sent  
             tx_busy <= 0;
             tx_counter <= 0;
             tx_bit_count <= 0;
         end else begin
             if(tx_start && !tx_busy) begin
-                tx_shift <= {1'b1, tx_data, 1'b0};
+                tx_shift <= {1'b1, tx_data, 1'b0}; // [STOP BIT] + [8 DATA BITS] + [START BIT]
                 tx_busy <= 1;
                 tx_bit_count <= 0;
                 tx_counter <= 0;
             end
             
             if(tx_busy) begin
-                if(tx_counter == CLOCKS_PER_BIT-1) begin
-                    tx_counter <= 0;
-                    tx <= tx_shift[0];
-                    tx_shift <= tx_shift >> 1;
+                if(tx_counter == CLOCKS_PER_BIT-1) begin  // CLOCKS_PER_BIT-1 = 434 - 1 = 433
+                    tx_counter <= 0;  // reset 
+                    tx <= tx_shift[0]; //  Rightmost position
+                    tx_shift <= tx_shift >> 1; // moves all bits right side
                     tx_bit_count <= tx_bit_count + 1;
                     
-                    if(tx_bit_count == 9) begin
+                    if(tx_bit_count == 9) begin  // stop bit  
                         tx_busy <= 0;
                     end
                 end else begin
@@ -103,7 +103,7 @@ module uart #(parameter CLK_FREQ=50000000, BAUD=115200)(
         end else begin
             rx_ready <= 0;
             
-            if(!rx_active) begin
+            if(!rx_active) begin  // receiving message  
                 if(rx == 1'b0) begin
                     rx_active <= 1;
                     rx_counter <= 0;
@@ -112,12 +112,12 @@ module uart #(parameter CLK_FREQ=50000000, BAUD=115200)(
             end else begin
                 if(rx_counter == CLOCKS_PER_BIT-1) begin
                     rx_counter <= 0;
-                    rx_shift <= {rx, rx_shift[9:1]};
+                    rx_shift <= {rx, rx_shift[9:1]}; // add new rx  bit 
                     rx_bit_count <= rx_bit_count + 1;
                     
                     if(rx_bit_count == 9) begin
                         rx_data <= rx_shift[8:1];
-                        rx_ready <= 1;
+                        rx_ready <= 1; // Come read
                         rx_active <= 0;
                     end
                 end else begin
@@ -180,7 +180,7 @@ module uart_fifo(
             uart_tx_start <= 0;
             uart_tx_data <= 0;
         end else begin
-            fifo_wr <= uart_rx_ready;
+            fifo_wr <= uart_rx_ready; // data write on fifo  
             
             if(uart_rx_ready) begin
                 uart_tx_data <= uart_rx_data;
